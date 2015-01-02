@@ -1,0 +1,91 @@
+package matim.development;
+
+import org.andengine.entity.primitive.Rectangle;
+import org.andengine.entity.sprite.Sprite;
+import org.andengine.extension.physics.box2d.PhysicsFactory;
+import org.andengine.util.color.Color;
+
+import com.badlogic.gdx.physics.box2d.FixtureDef;
+import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
+
+public class LevelManager {
+	private int current_level;
+	private final GameActivity activity;
+	public LevelManager(GameActivity gm, int level){
+		current_level = level;
+		activity = gm;
+	}
+	public void setLevel(int id){ current_level = id; }
+	public void LoadLevel(){
+		LoadLevel(current_level);
+	}
+	private void LoadLevel(int c) {
+		switch(c){
+		case 1:
+			createLevel1();
+			break;
+		case 2:
+			createLevel2();
+			break;
+		default:
+			createLevel0();
+			break;
+		}
+	}
+	private void createBlock(float left, float top, float width, float height,
+			FixtureDef fix) {
+		Rectangle ground = new Rectangle(left, top, width, height,
+				activity.vbo());
+		ground.setColor(new Color(15, 51, 5));
+		PhysicsFactory.createBoxBody(activity.physicsWorld, ground, BodyType.StaticBody,
+				fix);
+		activity.scene.attachChild(ground);
+		//GROUNDS.attachChild(ground);
+		int j = 0;
+		// for(int j=0;j<height/16;j++)
+		for (int i = 0; i < width / 16; i++) {
+			Sprite s = new Sprite(left + i * 16, top + j * 16,
+					activity.pavementTextureRegion,
+					activity.vbo());
+			activity.scene.attachChild(s);
+		}
+	}
+	private void addCoin(float dx, float dy) {
+		Sprite geld = new Sprite(dx, dy, activity.coinTextureRegion,
+				activity.vbo());
+		activity.Coins.attachChild(geld);
+		activity.Coins.setChildrenVisible(true);
+	}
+	private void createLevel0() {
+		FixtureDef WALL_FIX = PhysicsFactory.createFixtureDef(0.0f, 0.0f, 9000.0f);
+		// floor
+		createBlock(-16.0f, GameActivity.CAMERA_HEIGHT - 16, 6 * GameActivity.CAMERA_WIDTH, 16, WALL_FIX);
+		// left wall
+		createBlock(-16.0f, -16f, 16, GameActivity.CAMERA_HEIGHT + 16, WALL_FIX);
+		// right wall
+		createBlock(6 *GameActivity.CAMERA_WIDTH - 16.0f, -16f, 16, GameActivity.CAMERA_HEIGHT + 16,
+				WALL_FIX);
+
+		for(int i = 0; i <  6 * GameActivity.CAMERA_WIDTH / 64; i++)
+			addCoin(-64f+32 + i * 64f, GameActivity.CAMERA_HEIGHT - 32 - 32f);
+		
+		activity.ALL_COINS_NUMBER = activity.Coins.getChildCount();
+		
+		//populating blendziors
+		
+		//creating final goal (e.g. flag) to complete level
+		
+
+	}
+	private void createLevel1() {
+		//creating static platforms
+		
+		//creating opponents
+		
+		//creating final goal (e.g. flag)
+		
+	}
+	private void createLevel2() {
+
+	}
+}

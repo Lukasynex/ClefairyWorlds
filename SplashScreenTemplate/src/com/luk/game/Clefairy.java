@@ -1,4 +1,4 @@
-package matim.development;
+package com.luk.game;
 
 import org.andengine.entity.scene.background.Background;
 import org.andengine.entity.sprite.AnimatedSprite;
@@ -25,7 +25,7 @@ public class Clefairy {
 		posX=dx;
 		posY=dy;
 	}
-	public static Clefairy CreateClefairy(GameActivity activity, int dx,int dy) {
+	public static Clefairy getClefairy(GameActivity activity, int dx,int dy) {
 		if(instance == null){
 			instance = new Clefairy(activity,dx,dy);
 		}
@@ -44,7 +44,7 @@ public class Clefairy {
 		activity.clefairyTexture.load();
 	}
 
-	private void onCreateClefairy() {
+	public void onCreateClefairy() {
 		activity.ClefairyMoveable = new AnimatedSprite(GameActivity.CAMERA_WIDTH / 3, GameActivity.CAMERA_HEIGHT / 2,
 				activity.TiledClefairyRegion,
 				activity.vbo());

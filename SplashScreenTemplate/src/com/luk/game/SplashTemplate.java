@@ -1,4 +1,4 @@
-package matim.development;
+package com.luk.game;
 
 import org.andengine.engine.camera.Camera;
 import org.andengine.engine.handler.timer.ITimerCallback;

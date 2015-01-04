@@ -1,4 +1,4 @@
-package matim.development;
+package com.luk.game;
 
 import org.andengine.entity.primitive.Rectangle;
 import org.andengine.entity.sprite.Sprite;
@@ -11,6 +11,28 @@ import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 public class LevelManager {
 	private int current_level;
 	private final GameActivity activity;
+	private static enum ITEM_TYPE {
+		BLANK, STONE, GRASS, TREE, PCENTER, PSHOP, CHECKPOINT, SPRING, PLATFORM
+	};
+	//level schemas
+	private static final int MAX_WIDTH = 6 * GameActivity.CAMERA_WIDTH;
+	private static final int MAX_HEIGHT = GameActivity.CAMERA_HEIGHT;
+	private static final int TILE_SIZE = 50;
+	private final ITEM_TYPE level0[][] = new ITEM_TYPE[MAX_WIDTH/TILE_SIZE][MAX_HEIGHT/TILE_SIZE];
+	//TODO:wrapper leveli jako tablice enumów na tworzenie blocków
+	private void populateLevel0(){
+		for(int i = 0; i < MAX_WIDTH/TILE_SIZE; i++){
+			for(int j = 0; j < MAX_HEIGHT/TILE_SIZE; j++){
+				level0[i][j] = ITEM_TYPE.BLANK;
+				if(j==0 || i==0 || i==MAX_HEIGHT/TILE_SIZE - 1 || i==MAX_HEIGHT/TILE_SIZE - 1){
+					level0[i][j] = ITEM_TYPE.STONE;
+				}
+			}
+			
+		}
+		
+	}
+	
 	public LevelManager(GameActivity gm, int level){
 		current_level = level;
 		activity = gm;

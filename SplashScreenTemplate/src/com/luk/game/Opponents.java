@@ -1,4 +1,4 @@
-package matim.development;
+package com.luk.game;
 
 import org.andengine.entity.scene.background.Background;
 import org.andengine.entity.sprite.AnimatedSprite;
@@ -15,13 +15,14 @@ import android.content.Context;
 public class Opponents {
 	public static int INDEX_FOR_OPPONENT=0;
 	private final int index;
-	public static final int MAX_NUMBER_OF_OPPONENTS = 5;
+	public static final int MAX_NUMBER_OF_OPPONENTS = 15;
 	public int getIndex() { return index;}
 	
 	private GameActivity activity;
 	
 	private boolean SquirtleLeft=false;
-	private int left,right;
+	private final int left;
+	private final int right;
 	private int SpeedForSquirtle = 1;
 	private int touches_from_top=0;
 	
@@ -47,67 +48,72 @@ public class Opponents {
 			activity.squirtleTexture.load();
 	}	
 	public void onCreate(){
-		activity.SquirtleMoveable = new AnimatedSprite(left, GameActivity.CAMERA_HEIGHT -56f,
+		activity.SquirtleMoveable[index] = new AnimatedSprite((left+right)/2, GameActivity.CAMERA_HEIGHT -56f,
 				activity.TiledSquirtleRegion,
 				activity.vbo());
-		activity.SquirtleMoveable.animate(240);
-		activity.scene.attachChild(activity.SquirtleMoveable);
+		//activity.SquirtleMoveable[index].setFlippedHorizontal(false);
+		activity.SquirtleMoveable[index].animate(240);
+		activity.scene.attachChild(activity.SquirtleMoveable[index]);
 	}
 	
 	public void LoopForOponents() {
-		if(activity.SquirtleMoveable.getX()==right || activity.SquirtleMoveable.getX()==right+1
-				|| activity.SquirtleMoveable.getX()==right+2)
+		//booleans checking if Squirtle not crosses area
+		if(activity.SquirtleMoveable[index].getX()==right || activity.SquirtleMoveable[index].getX()==right+1
+				|| activity.SquirtleMoveable[index].getX()==right+2)
+			SquirtleLeft=true;
+		if(activity.SquirtleMoveable[index].getX()==left || activity.SquirtleMoveable[index].getX()==left+1 
+				|| activity.SquirtleMoveable[index].getX()==left+2)
 			SquirtleLeft=false;
-		if(activity.SquirtleMoveable.getX()==left || activity.SquirtleMoveable.getX()==left+1 
-				|| activity.SquirtleMoveable.getX()==left+2)
-			SquirtleLeft=!false;
-		
-		if(!SquirtleLeft){
-			activity.SquirtleMoveable.setX(activity.SquirtleMoveable.getX()+1*SpeedForSquirtle);
-			activity.SquirtleMoveable.setFlippedHorizontal(true);
+		//left/right move
+		if(SquirtleLeft){
+			activity.SquirtleMoveable[index].setX(activity.SquirtleMoveable[index].getX()-1*SpeedForSquirtle);
+			activity.SquirtleMoveable[index].setFlippedHorizontal(false);
 		}
 		else {
-			activity.SquirtleMoveable.setX(activity.SquirtleMoveable.getX()-1*SpeedForSquirtle);
-			activity.SquirtleMoveable.setFlippedHorizontal(false);
-			if(activity.SquirtleMoveable.getX()-1*SpeedForSquirtle == right-left
-					|| activity.SquirtleMoveable.getX()-1*SpeedForSquirtle == right-left+1 
-					|| activity.SquirtleMoveable.getX()-1*SpeedForSquirtle == right-left+2)
-				SquirtleLeft = false;
+			activity.SquirtleMoveable[index].setX(activity.SquirtleMoveable[index].getX()+1*SpeedForSquirtle);
+			activity.SquirtleMoveable[index].setFlippedHorizontal(true);
 		}
 	}
-	public void CollisionDetector(Sprite sPlayer){}
+	//put after collides with:
+	public void CollisionWalkDetected(){
+		SquirtleLeft = (SquirtleLeft==true) ? false : true;
+		
+		if(SquirtleLeft){
+			activity.SquirtleMoveable[index].setX(activity.SquirtleMoveable[index].getX()-3*SpeedForSquirtle);
+			activity.SquirtleMoveable[index].setFlippedHorizontal(true);
+		}
+		else{
+			activity.SquirtleMoveable[index].setX(activity.SquirtleMoveable[index].getX()+3*SpeedForSquirtle);
+			activity.SquirtleMoveable[index].setFlippedHorizontal(false);
+		}
+			
+	}
 //TODO: zrobić detekcje, odpalić dla klasy opponents, ma działać!!!
 	public void CollisionDetector(AnimatedSprite sPlayer){
-		if((float)(sPlayer.getY()+sPlayer.getHeight()-activity.SquirtleMoveable.getHeight()/4) <=
-				activity.SquirtleMoveable.getY()){
+		if((float)(sPlayer.getY()+sPlayer.getHeight()-activity.SquirtleMoveable[index].getHeight()/4) <=
+				activity.SquirtleMoveable[index].getY()){
 			
 			if(SpeedForSquirtle==1){
-			final float dx=activity.SquirtleMoveable.getX();
-			final float dy=activity.SquirtleMoveable.getY()+15f;
+			final float dx=activity.SquirtleMoveable[index].getX();
+			final float dy=activity.SquirtleMoveable[index].getY()+15f;
 			
-		//	activity.SquirtleMoveable.setRotation(activity.SquirtleMoveable.getRotation()-90);
-			activity.scene.detachChild(activity.SquirtleMoveable);
-			activity.SquirtleMoveable = new AnimatedSprite(dx,dy,
+			activity.scene.detachChild(activity.SquirtleMoveable[index]);
+			activity.SquirtleMoveable[index] = new AnimatedSprite(dx,dy,
 					activity.TiledHiddenSquirtleRegion,activity.vbo());
-			activity.SquirtleMoveable.animate(240);
-			activity.scene.attachChild(activity.SquirtleMoveable);
+			activity.SquirtleMoveable[index].animate(240);
+			activity.scene.attachChild(activity.SquirtleMoveable[index]);
 			SpeedForSquirtle*=3;
 			}
 			++touches_from_top;
 		}
 		else
 			activity.scene.setBackground(new Background(Color.PINK));
-		if(touches_from_top>=2){
-			
+		if(touches_from_top==2){
 			SpeedForSquirtle=6;
-			final float dx=activity.SquirtleMoveable.getX();
-			final float dy=activity.SquirtleMoveable.getY();
-			
-			
-			if(dy<0 || dx<-1000 || dx>1000)
-				activity.scene.detachChild(activity.SquirtleMoveable);
-			
-			}
+		}
+		if(touches_from_top>2)
+			activity.scene.detachChild(activity.SquirtleMoveable[index]);
+		
 		//if (moveLeft)
 			//TODO:zrobić klasę Character, aby miałą pola publiczne body, AnimatedSprite, prsoty dostep itd...
 			//body.setLinearVelocity(-5f, -5f);

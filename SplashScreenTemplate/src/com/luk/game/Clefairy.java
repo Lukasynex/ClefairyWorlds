@@ -10,6 +10,7 @@ import org.andengine.extension.physics.box2d.PhysicsFactory;
 import org.andengine.opengl.texture.TextureOptions;
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlas;
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlasTextureRegionFactory;
+import org.andengine.opengl.texture.region.TiledTextureRegion;
 import org.andengine.util.HorizontalAlign;
 import org.andengine.util.color.Color;
 
@@ -41,6 +42,10 @@ public class Clefairy {
 		activity.TiledClefairyRegion = BitmapTextureAtlasTextureRegionFactory
 				.createTiledFromAsset(activity.clefairyTexture, activity,
 						"clefairy_fullwalk.png", 0, 0, 7, 1); // 385x55
+		activity.ImmortalTiledClefairyRegion = BitmapTextureAtlasTextureRegionFactory
+				.createTiledFromAsset(activity.clefairyTexture, activity,
+						"clefairy_immortale.png", 0, 56, 7, 1); // 385x55
+		
 		activity.clefairyTexture.load();
 	}
 
@@ -48,7 +53,7 @@ public class Clefairy {
 		activity.ClefairyMoveable = new AnimatedSprite(GameActivity.CAMERA_WIDTH / 3, GameActivity.CAMERA_HEIGHT / 2,
 				activity.TiledClefairyRegion,
 				activity.vbo());
-		activity.ClefairyMoveable.animate(180);
+		((AnimatedSprite) activity.ClefairyMoveable).animate(180);
 		activity.ClefairyMoveable.setRotation(-3.0f);
 		final FixtureDef PLAYER_FIX = PhysicsFactory.createFixtureDef(10.0f,
 				0.5f, 190.0f);
@@ -84,11 +89,23 @@ public class Clefairy {
 		}
 	}
 
-	public void CollisionDetector(Sprite sPlayer) {
-	}
+	public void CollisionDetector(Sprite sPlayer) {}
 
-	public void CollisionDetector(AnimatedSprite opponent) {
-		activity.scene.setBackground(new Background(Color.BLUE));
+//	public void CollisionDetector(AnimatedSprite opponent) {
+//		activity.scene.setBackground(new Background(Color.BLUE));
+//	}
+	public void setAnimation(TiledTextureRegion region) {
+		final float dx = activity.ClefairyMoveable.getX();
+		final float dy = activity.ClefairyMoveable.getY();
+		setAnimation(region, dx, dy);
+	}
+	public void setAnimation(TiledTextureRegion region, float dx, float dy){
+		//activity.scene.detachChild(activity.ClefairyMoveable);
+		activity.ClefairyMoveable = new AnimatedSprite(dx,dy,
+				region,
+				activity.vbo());
+		 activity.ClefairyMoveable.animate(240);
+		//activity.scene.attachChild(activity.ClefairyMoveable);
 	}
 
 }

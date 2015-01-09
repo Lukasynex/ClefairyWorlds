@@ -4,6 +4,8 @@ import java.util.Random;
 
 import org.andengine.engine.camera.Camera;
 import org.andengine.engine.handler.IUpdateHandler;
+import org.andengine.engine.handler.timer.ITimerCallback;
+import org.andengine.engine.handler.timer.TimerHandler;
 import org.andengine.engine.options.EngineOptions;
 import org.andengine.engine.options.ScreenOrientation;
 import org.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy;
@@ -39,7 +41,14 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
-
+/**
+ //STARTED SINCE
+ //TODO: stan 7 I 15
+  * [done]naprawić ustawianie animacji po skończonej akcji
+  * -> zrobić platformy i goombasy (te niebieskie luje, ew bulbasaury)
+ * @author lukasz
+ *
+ */
 public class GameActivity extends BaseGameActivity implements
 		IOnSceneTouchListener {
 	Scene scene;
@@ -60,29 +69,39 @@ public class GameActivity extends BaseGameActivity implements
 	public TextureRegion pavementTextureRegion;
 	private TextureRegion dojoTextureRegion;
 	private TextureRegion grassTextureRegion;
-	private boolean moveLeft;
 	public TextureRegion coinTextureRegion;
 	public  int ALL_COINS_NUMBER=0;
 	protected boolean rotateEnabled=false;
-	protected boolean isOnGround = true;
+	
 	protected Entity GROUNDS = new Entity();
+	private int PermeableCount =5;
+	private Rectangle platforms[] = new Rectangle[PermeableCount];
+	private int indexForPermeable = 0;
+
 	
 	protected boolean BulbyLeft;
 	
 	//essential variables for Opponents creation
 	public BitmapTextureAtlas squirtleTexture;
 	public TiledTextureRegion TiledSquirtleRegion;
+	public TiledTextureRegion TiledBitingSquirtleRegion;
 	public TiledTextureRegion TiledHiddenSquirtleRegion;
+	public TiledTextureRegion deadWalkingSquirtleFall;
+	public TiledTextureRegion deadSquirtleShellCrash;
+	//public static final double TAN15 = Math.sqrt( (1-Math.sqrt(3)/2) /2) / Math.sqrt( (1+Math.sqrt(3)/2) /2); 
 	public int OpponentsCount = 15;
-	public AnimatedSprite[] SquirtleMoveable = new AnimatedSprite[OpponentsCount];
-	private Opponents[] blendzior = new Opponents[OpponentsCount];
+	public Sprite[] SquirtleMoveable = new AnimatedSprite[OpponentsCount];
+	private KoopaTroopa[] blendzior = new KoopaTroopa[OpponentsCount];
 	
 	//essential variables for creation Clefairy-singleton character
 	public AnimatedSprite ClefairyMoveable;
 	public TiledTextureRegion TiledClefairyRegion;
+	public TiledTextureRegion ImmortalTiledClefairyRegion;
 	public BitmapTextureAtlas clefairyTexture;
+	
 	public Body ClefairyBody;
 	private Clefairy character;
+	protected int isOnGround = 2;
 	
 	protected float SpeedForSquirtle=1f;
 	protected int touches_from_top=0;
@@ -90,6 +109,17 @@ public class GameActivity extends BaseGameActivity implements
 	private TextureRegion pokecenter;
 	private TextureRegion pokeshop;
 	private TextureRegion poketree;
+	protected int currentHunter;
+	protected boolean bitten;
+	
+	
+	private Rectangle left_wall_reference;
+	private Rectangle right_wall_reference;
+	private Rectangle floor_reference;
+	
+	protected int currentDead2;
+	protected int currentDead1;
+	private boolean moveLeft;
 	protected static final int CAMERA_WIDTH = 800;
 	protected static final int CAMERA_HEIGHT = 480;
 
@@ -107,7 +137,7 @@ public class GameActivity extends BaseGameActivity implements
 	}
 	private void LoadNewOpponents(){
 		for(int i=0; i <OpponentsCount; i++){
-			blendzior[i] = new Opponents(this, 400 + 200*i, 1000+200*i);
+			blendzior[i] = new KoopaTroopa(this, 400 + 200*i, 1000+200*i);
 			blendzior[i].onLoad();
 		}
 	}
@@ -198,11 +228,12 @@ public class GameActivity extends BaseGameActivity implements
 //			trees[i] = new Sprite(100+200*i, dY-53f, poketree, vbo);
 //			scene.attachChild(trees[i]);
 			//TODO:populate trees?
-			pokeshops[i] = new Sprite(-65+400+200*i, dY-62, pokeshop, vbo);
+			if(100-65+200*i < 6*CAMERA_WIDTH && 700+200*i < 6*CAMERA_WIDTH){
+			pokeshops[i] = new Sprite(200*i, dY-62, pokeshop, vbo);
 			scene.attachChild(pokeshops[i]);
-			pokecenters[i] = new Sprite(1000+200*i, dY-71, pokecenter, vbo);
+			pokecenters[i] = new Sprite(83+200*i, dY-71, pokecenter, vbo);
 			scene.attachChild(pokecenters[i]);
-			
+			}
 		}
 		
 	}
@@ -232,38 +263,85 @@ public class GameActivity extends BaseGameActivity implements
 		// sceneManager.setCurrentScene(AllScenes.MENU);
 		// }
 		// }));
+		
+//		this.scene.registerUpdateHandler(new TimerHandler(0.7f, new ITimerCallback() {
+//			@Override
+//			public void onTimePassed(TimerHandler pTimerHandler) {		
+//			}
+//		}));
 		mEngine.registerUpdateHandler(new IUpdateHandler() {
-
 			@Override
 			public void reset() {
 			}
-
 			@Override
 			public void onUpdate(float pSecondsElapsed) {
+//				if(ALL_COINS_NUMBER-Coins.getChildCount() >5 && ALL_COINS_NUMBER-Coins.getChildCount() < 7)
+//					character.setAnimation(ImmortalTiledClefairyRegion);
+//				if(ALL_COINS_NUMBER-Coins.getChildCount() == 7 )
+//					character.setAnimation(TiledClefairyRegion);
+				
+				//loop for permeable floors
+//				UpdatePermeableBlocks();
+				
+				//loops for opponents only
 				for(int i=0;i<OpponentsCount;i++){
-					if(blendzior[i]!=null){
-						blendzior[i].LoopForOponents();
+					if(blendzior[i]!=null && !blendzior[i].Dead){
+						if(blendzior[i].getCollisionsNumber()==0)
+							blendzior[i].LoopForOponents(true);
+						else
+							blendzior[i].LoopForOponents(false);
 						boolean nothing = true;
 						for(int j=0; j<OpponentsCount && nothing;j++){
 							if(j!=i){
 								if(SquirtleMoveable[j].collidesWith( (AnimatedSprite)  SquirtleMoveable[i])){
-									blendzior[i].CollisionWalkDetected();
-									blendzior[j].CollisionWalkDetected();
+									if(blendzior[i].getCollisionsNumber()==0){
+										blendzior[i].SwitchWalkDirection();
+										blendzior[j].SwitchWalkDirection();
+									}
+									else if(blendzior[i].getCollisionsNumber()<2 
+											&& blendzior[j].getCollisionsNumber()==0){
+										blendzior[j].performDeath();
+									}
+									else if(blendzior[i].getCollisionsNumber() >0 
+											&& blendzior[j].getCollisionsNumber() >0 &&
+											blendzior[i].getCollisionsNumber() <=2 
+											&& blendzior[j].getCollisionsNumber() <=2){
+										blendzior[i].performDeath();
+										blendzior[j].performDeath();
+									}
+									
 									nothing=false;
 								}
 							}
 						}
 						
-						if(SquirtleMoveable[i].collidesWith(ClefairyMoveable)){
-							blendzior[i].CollisionWalkDetected();
-							if (moveLeft)
-								ClefairyBody.setLinearVelocity(-5f, -5f);
-							else
-								ClefairyBody.setLinearVelocity(5f, -5f);
-							blendzior[i].CollisionDetector(ClefairyMoveable);
+						if(SquirtleMoveable[i].collidesWith(left_wall_reference) ||
+							SquirtleMoveable[i].collidesWith(right_wall_reference)){
+							blendzior[i].SwitchWalkDirection();
+						}
+						else if(SquirtleMoveable[i].collidesWith(ClefairyMoveable)){
+							//blendzior[i].CollisionWalkDetected();
+							if(blendzior[i].getCollisionsNumber()==0){
+								blendzior[i].performBitingAction();
+							}
+							
+							float dx = SquirtleMoveable[i].getX() - ClefairyMoveable.getX();
+							if(dx<0){
+								ClefairyMoveable.setFlippedHorizontal(!true);
+								ClefairyBody.setLinearVelocity(3f,-3f);
+							}
+							else{
+								ClefairyMoveable.setFlippedHorizontal(!false);
+								ClefairyBody.setLinearVelocity(-3f,-3f);
+							}
+							blendzior[i].ClefairyCollision();
 						}
 					}
 				}
+				//Clefiary on the ground
+				if(ClefairyMoveable.collidesWith(floor_reference))
+					isOnGround = 2;
+				//Clefairy collects coins
 				for(int i = 1; i < Coins.getChildCount(); i++)
 					if(ClefairyMoveable.collidesWith((Sprite)Coins.getChildByIndex(i))){
 						Coins.detachChild(Coins.getChildByIndex(i));
@@ -282,6 +360,7 @@ public class GameActivity extends BaseGameActivity implements
 							new TextOptions(HorizontalAlign.LEFT),
 							vbom);
 					scene.attachChild(leftText);
+					
 				}
 			}
 		});
@@ -294,18 +373,58 @@ public class GameActivity extends BaseGameActivity implements
 		Coins.attachChild(geld);
 		Coins.setChildrenVisible(true);
 	}
-
+	
+//	private void UpdatePermeableBlocks(){
+//		float Yup = ClefairyMoveable.getY();
+//		float Ydown = ClefairyMoveable.getY()+ClefairyMoveable.getHeight();
+//		for(int i = 0; i < PermeableCount; i++){
+//			if(platforms[i].getY() > Yup){
+//				if(platforms[i].getY()+platforms[i].getHeight()> Ydown){
+//					if(platforms[i].isVisible()==false)
+//						scene.attachChild(platforms[i]);
+//				}
+//				else if (platforms[i].isVisible()){
+//					platforms[i].setVisible(false);
+//					scene.detachChild(platforms[i]);
+//					
+//				}
+//			}else if (platforms[i].isVisible()){
+//				platforms[i].setVisible(false);
+//				scene.detachChild(platforms[i]);
+//			}
+//		}
+//	}
+	
+//	private void createPermeableBlock(float left, float top, float width, float height,
+//			FixtureDef fix){
+//		platforms[indexForPermeable] = new Rectangle(left, top, width, height,vbo());
+//		platforms[indexForPermeable].setVisible(true);
+//		
+//		
+//		PhysicsFactory.createBoxBody(physicsWorld, platforms[indexForPermeable], BodyType.StaticBody,fix);
+//		scene.attachChild(platforms[indexForPermeable]);
+//
+//		++indexForPermeable;
+//	}
+	
+	
 	private void createBlock(float left, float top, float width, float height,
 			FixtureDef fix) {
 		Rectangle ground = new Rectangle(left, top, width, height,
-				this.mEngine.getVertexBufferObjectManager());
+				vbo());
+		if(width==16 && height==CAMERA_HEIGHT+16){
+			if(left==-16.0f)
+				left_wall_reference = ground;
+			else if(left==6 * CAMERA_WIDTH - 16.0f)
+				right_wall_reference = ground;
+		}
+		if(left==-16.0f && top == CAMERA_HEIGHT - 16 && width == 6 * CAMERA_WIDTH && height == 16){
+			floor_reference = ground;
+		}
 		ground.setColor(new Color(15, 51, 5));
-		PhysicsFactory.createBoxBody(physicsWorld, ground, BodyType.StaticBody,
-				fix);
+		PhysicsFactory.createBoxBody(physicsWorld, ground, BodyType.StaticBody,fix);
 		scene.attachChild(ground);
-		//GROUNDS.attachChild(ground);
 		int j = 0;
-		// for(int j=0;j<height/16;j++)
 		for (int i = 0; i < width / 16; i++) {
 			Sprite s = new Sprite(left + i * 16, top + j * 16,
 					pavementTextureRegion,
@@ -317,6 +436,7 @@ public class GameActivity extends BaseGameActivity implements
 	private void createWalls() {
 		FixtureDef WALL_FIX = PhysicsFactory.createFixtureDef(0.0f, 0.0f, 9000.0f);
 		// floor
+		
 		createBlock(-16.0f, CAMERA_HEIGHT - 16, 6 * CAMERA_WIDTH, 16, WALL_FIX);
 		// left wall
 		createBlock(-16.0f, -16f, 16, CAMERA_HEIGHT + 16, WALL_FIX);
@@ -324,10 +444,16 @@ public class GameActivity extends BaseGameActivity implements
 		createBlock(6 * CAMERA_WIDTH - 16.0f, -16f, 16, CAMERA_HEIGHT + 16,
 				WALL_FIX);
 
-		for(int i = 0; i <  6 * CAMERA_WIDTH / 64; i++)
-			addCoin(-64f+32 + i * 64f, CAMERA_HEIGHT - 32 - 32f);
-		
+//		int count=0;
+		for(int i = 0; i <  6 * CAMERA_WIDTH / 64; i++){
+			addCoin(32 + i * 64f, CAMERA_HEIGHT - 32 - 32f);
+//			if(count<3)
+//				createPermeableBlock(32 + i * 64f, CAMERA_HEIGHT - 32 - 32f - 10*i,
+//						64, 16, WALL_FIX);
+//			count++;
+		}
 		ALL_COINS_NUMBER = Coins.getChildCount();
+		
 	}
 
 	@Override
@@ -336,26 +462,28 @@ public class GameActivity extends BaseGameActivity implements
 			float dy = pSceneTouchEvent.getY() - ClefairyMoveable.getY();
 			float dx = pSceneTouchEvent.getX() - ClefairyMoveable.getX();
 			
-			if(isOnGround){
-				Vector2 velocity;
-				float euclides = (float) Math.sqrt(dy * dy + dx * dx);
-				float Len = 5.0f;
-				if (dy != 0)
-					velocity = Vector2Pool.obtain(Len * dx / euclides, Len * dy
-							/ euclides);
-				else
-					velocity = Vector2Pool.obtain(Len * dx / euclides, 0f);
-				// velocity = Vector2Pool.obtain(0f,-5f);
-				// body.setAngularVelocity(dx);
+			Vector2 velocity;
+			float euclides = (float) Math.sqrt(dy * dy + dx * dx);
+			float Len = 6.0f;
+			if (dy != 0)
+				velocity = Vector2Pool.obtain(Len * dx / euclides, Len * dy
+						/ euclides);
+			else
+				velocity = Vector2Pool.obtain(Len * dx / euclides, 0f);
+			
+			boolean prawieskok = ( Math.abs(Len*dx/euclides) 
+					> 3*Math.abs(Len*dy/euclides) ) ? true : false;
+			if(isOnGround==2 || isOnGround==1 || prawieskok){
+				
 				ClefairyBody.setLinearVelocity(velocity);
 				Vector2Pool.recycle(velocity);
+			if(isOnGround==1 || isOnGround==2)
+				--isOnGround;
 			}
 			if (dx > 0) {
 				ClefairyMoveable.setFlippedHorizontal(true);
-				moveLeft = true;
 			} else {
 				ClefairyMoveable.setFlippedHorizontal(false);
-				moveLeft = false;
 			}
 			return true;
 		}
